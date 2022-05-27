@@ -37,15 +37,44 @@ async function getContactById(contactId) {
   }
 }
 
-const removeContact = async (contactId) => {}
+async function removeContact(contactId) {
+  //contactId should be a String
+  const contacts = await listContacts();
 
-async function addContact(newContact) {
+  if (!contacts || contacts.length === 0) {
+    return false; //no contacts, deletion failed
+  }
+
+  const idString = contactId.toString();
+
+  const contactForDeletion = contacts.find((contact) => contact.id === idString);
+
+  if (!contactForDeletion) {
+    return false; //no contact found to delete
+  }
+
+  const contactsAfterDeletion = contacts.filter((contact) => {
+    return contact.id !== idString; //keep all contacts with IDs != delID
+  });
+
+  try {
+    await nodeFileSys.writeFile(contactsPath, JSON.stringify(contactsAfterDeletion, null, 2), "utf-8");
+  }
+  catch (error) {
+    //this branch triggers when writeFile promise is rejected
+    return 500;
+  }
+
+  return contactForDeletion; //deletion successful, returning deleted contact
+}
+
+async function addContact(body) {
   const contacts = await listContacts();
 
   if (!contacts || !contacts.length) {
     contacts = [];
   }
-  const contactWithId = { id: uuidv4(), ...newContact };
+  const contactWithId = { id: uuidv4(), ...body };
   contacts.push(contactWithId);
   try {
     await nodeFileSys.writeFile(contactsPath, JSON.stringify(contacts, null, 2), "utf-8");
@@ -54,7 +83,7 @@ async function addContact(newContact) {
     //this branch triggers when writeFile promise is rejected
     return false;
   }
-  
+
   return contactWithId; //return new contact with id
 }
 
@@ -70,25 +99,6 @@ module.exports = {
 
 
 /*
-async function addContact(newContact) {
-  let contacts = [];
-  try {
-    contacts = await getContacts();
-  }
-  catch (error) {
-    console.error(error);
-    return undefined;
-  };
-
-  if (!contacts) {
-    contacts = [];
-  }
-  const contactWithId = { id: uuidv4(), ...newContact };
-  contacts.push(contactWithId);
-  nodeFileSys.writeFile(contactsPath, JSON.stringify(contacts, null, 2), "utf-8");
-  return contacts; //return new array of contacts
-}
-
 async function deleteContact(id) {
   //id is a String
 

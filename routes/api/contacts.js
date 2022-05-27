@@ -12,7 +12,7 @@ router.get('/', async (req, res, next) => {
 
   res.status(200).json({
     code: 200,
-    status: "Success",
+    message: "Success",
     data: contacts,
   });
 })
@@ -25,14 +25,14 @@ router.get('/:contactId', async (req, res, next) => {
     //this is a clear error: if the user has a valid ID, there should be a result. Unless the ID is (already) invalid. In which case...
     res.status(404).json({
       code: 404,
-      status: `Item with id=${contactId} not found`,
+      message: `Contact with id=${contactId} not found`,
     });
     return;
   }
 
   res.status(200).json({
     code: 200,
-    status: "Success",
+    message: "Success",
     data: foundContact,
   });
 })
@@ -45,24 +45,46 @@ router.post('/', async (req, res, next) => {
     //we failed to add contact due to writeFile error
     res.status(500).json({
       code: 500,
-      status: "Internal server error",
+      message: "Internal server error",
     });
     return;
   }
 
   res.status(201).json({
     code: 201,
-    status: "Success",
+    message: "Success",
     data: addedContact,
   })
 })
 
 router.delete('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
+  const { contactId } = req.params; 
+  const deletedContact = await contactOps.removeContact(contactId);
+  
+  if (deletedContact === false) {
+    res.status(404).json({
+      code: 404,
+      message: `Contact with id=${contactId} not found`,
+    });
+    return;
+  }
+  if(deletedContact === 500) {
+    res.status(500).json({
+      code: 500,
+      message: `Internal server error`,
+    });
+    return;
+  }
+
+  res.status(200).json({
+    code: 200,
+    message: "Contact deleted",
+    data: deletedContact,
+  });
 })
 
 router.put('/:contactId', async (req, res, next) => {
   res.json({ message: 'template message' })
 })
 
-module.exports = router
+module.exports = router;
