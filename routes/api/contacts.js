@@ -41,7 +41,7 @@ router.post('/', async (req, res, next) => {
   //TODO: validate contact
   const addedContact = await contactOps.addContact(req.body);
   
-  if (addedContact === false) {
+  if (addedContact === 500) {
     //we failed to add contact due to writeFile error
     res.status(500).json({
       code: 500,
@@ -84,7 +84,23 @@ router.delete('/:contactId', async (req, res, next) => {
 })
 
 router.put('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+  const { contactId } = req.params;
+  //TODO: validate req.body for proper contact data
+  const updatedContact = await contactOps.updateContact(contactId, req.body);
+  
+  if (updatedContact === false) {
+    res.status(404).json({
+      code: 404,
+      message: `Contact with id=${contactId} not found`,
+    });
+    return;
+  }
+
+  res.status(200).json({
+    code: 200,
+    message: "Contact updated",
+    data: updatedContact,
+  });
+});
 
 module.exports = router;
