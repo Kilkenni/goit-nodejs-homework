@@ -57,8 +57,12 @@ app.use((err, req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  const { statusCode = 500, message = "Internal server error." } = err;
-  res.status(statusCode).json({ message });
+  const { statusCode = 500, message = "Internal server error.", details } = err;
+  if (!err.statusCode) {
+    console.error("Non-HTML error!"); //ideally this should never happen: we must eliminate all general runtime errors before prod
+    throw err;
+  }
+  res.status(statusCode).json({ message, details });
 })
 
 module.exports = app;
