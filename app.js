@@ -62,6 +62,16 @@ app.use((err, req, res, next) => {
     console.error("Non-HTML error!"); //ideally this should never happen: we must eliminate all general runtime errors before prod
     throw err;
   }
+  //force messages to conform to HW description
+  if (statusCode === 404) {
+    res.status(statusCode).json({ message: "Not found" });
+    return;
+  }
+  if (statusCode === 400) {
+    res.status(statusCode).json({ message: details[0].message });
+    return;
+  }
+  //end force
   res.status(statusCode).json({ message, details });
 })
 
