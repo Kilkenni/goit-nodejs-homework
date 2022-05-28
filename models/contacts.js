@@ -28,7 +28,7 @@ async function getContactById(contactId) {
   const foundContact = contacts.find((contact) => {
     return contact.id === idString;
   });
-
+  
   if (foundContact) {
     return foundContact; //gotcha
   }
