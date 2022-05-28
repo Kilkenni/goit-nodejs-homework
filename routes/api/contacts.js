@@ -1,8 +1,6 @@
 const express = require('express');
 
 const ContactsError = require("./ContactsError.js");
-
-//import { listContacts } from '../../models/contacts';
 const contactOps = require('../../models/contacts')
 
 const router = express.Router()
