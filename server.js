@@ -1,11 +1,13 @@
 const app = require('./app');
 
-let localEnv = null;
+const mongoose = require("mongoose");
 
-if (app.get('env') === "development") {
-  localEnv = require('dotenv');
-  localEnv.config(); 
-}
+// let localEnv = null;
+
+// if (app.get('env') === "development") {
+const localEnv = require('dotenv');
+localEnv.config(); 
+// }
 
 const PORT = process.env.PORT || 3000;
 

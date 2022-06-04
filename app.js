@@ -2,13 +2,30 @@ const express = require('express')
 const logger = require('morgan')
 const cors = require('cors')
 
+const mongoose = require("mongoose");
+
+const localEnv = require('dotenv');
+localEnv.config(); 
+
 const contactsRouter = require('./routes/api/contacts')
 
-const app = express()
+const app = express();
 
-const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
+const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
 
 let winston = null;
+
+const DB_HOST = `mongodb+srv://${process.env.MONGO_NAME}:${process.env.MONGO_PASS}@${process.env.MONGO_HOST}`;
+
+mongoose.connect(DB_HOST)
+  .then(() => {
+    console.log("Database connection successful");
+  })
+  .catch((error) => {
+    console.error("Mongoose: failed to connect to database");
+    console.log(error.message);
+    process.exit(1);
+  });
 
 if (app.get('env') === "development") {
   winston = require('winston');
@@ -68,7 +85,7 @@ app.use((err, req, res, next) => {
     return;
   }
   if (statusCode === 400) {
-    res.status(statusCode).json({ message: details[0].message });
+    res.status(statusCode).json({ message: details? details[0].message : message });
     return;
   }
   //end force
