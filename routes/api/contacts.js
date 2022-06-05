@@ -8,6 +8,7 @@ const router = express.Router()
 //for checking req.body with Joi
 const contactSchema = require("../../validation/contactSchema.js");
 const validateSchema = require("../../validation/validateRequest.js");
+const contactFavSchema = require('../../validation/contactFavSchema.js');
 
 // endpoint: /api/contacts
 
@@ -113,5 +114,28 @@ router.put('/:contactId', validateSchema(contactSchema, ContactsError), async (r
     return;
   } 
 });
+
+router.patch("/:contactId/favorite", validateSchema(contactFavSchema, ContactsError), async (req, res, next) => {
+  const { contactId } = req.params;
+  try {
+    const updatedContact = await contactOps.updateStatusContact(contactId, req.body);
+  
+    if (updatedContact === false) {
+      throw new ContactsError(404, `Contact with id=${contactId} not found`);
+    }
+
+    res.status(200).json({
+      code: 200,
+      message: "Contact updated",
+      data: updatedContact,
+    });
+  }
+  catch (error) {
+    next(error);
+    return;
+  }
+});
+
+//TODO: PATCH /api/contacts/:contactId/favorite
 
 module.exports = router;

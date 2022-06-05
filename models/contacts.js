@@ -1,9 +1,3 @@
-//const nodeFileSys = require("fs").promises;
-//const nodePathModule = require("path");
-//const { v4: uuidv4 } = require('uuid');
-
-//const contactsPath = nodePathModule.resolve("./models/contacts.json");
-
 const Contact = require("./contactSchema.js");
 
 async function listContacts() {
@@ -67,10 +61,24 @@ async function updateContact(contactId, body) {
   } 
 }
 
+async function updateStatusContact(contactId, body) {
+  try {
+    const { favorite } = body;
+    const nextContact = await Contact.findByIdAndUpdate(contactId, {favorite}, { new: true });
+
+    return nextContact || false; //update returns null if the contact is not found, hence we return "false"
+  }
+  catch (mongooseError) {
+    //can be an ID cast error (ID format is wrong), it's still presented as 404 to the user
+    return false;
+  }
+}
+
 module.exports = {
   listContacts,
   getContactById,
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 }
