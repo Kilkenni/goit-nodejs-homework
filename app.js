@@ -4,9 +4,9 @@ const cors = require('cors')
 
 const contactsRouter = require('./routes/api/contacts')
 
-const app = express()
+const app = express();
 
-const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
+const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
 
 let winston = null;
 
@@ -68,7 +68,11 @@ app.use((err, req, res, next) => {
     return;
   }
   if (statusCode === 400) {
-    res.status(statusCode).json({ message: details[0].message });
+    let badReqMessage = details ? details[0].message : message;
+    if (badReqMessage === '"favorite" is required') {
+      badReqMessage = "missing field favorite";
+    }
+    res.status(statusCode).json({ message: badReqMessage });
     return;
   }
   //end force
