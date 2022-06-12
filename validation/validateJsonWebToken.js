@@ -48,7 +48,7 @@ const validateToken = (req, res, next) => {
     next();
   }
   catch (error) {
-    next(new InvalidTokenError());
+    next(new InvalidTokenError(error.details));
     return;
   } 
 };

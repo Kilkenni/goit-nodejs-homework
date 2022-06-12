@@ -3,16 +3,16 @@ const express = require('express');
 const router = express.Router();
 
 const contactOps = require('../../models/contacts');
-const { ServerError, NotFoundError } = require("../../errors/ServerError.js");
+const { /* ServerError,*/ NotFoundError } = require("../../errors/ServerError.js");
 
 //for checking req.body with Joi
 const { contactValSchema, contactValSchemaFav } = require("../../models/contactSchema.js");
 const validateSchema = require("../../validation/validateSchema.js");
-// const contactFavSchema = require('../../validation/contactFavSchema.js');
+const { validateToken } = require("../../validation/validateJsonWebToken")
 
 // endpoint: /api/contacts
 
-router.get('/', async (req, res, next) => {
+router.get('/', validateToken, async (req, res, next) => {
   try {
     const contacts = await contactOps.listContacts();
 
@@ -28,7 +28,7 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-router.get('/:contactId', async (req, res, next) => {
+router.get('/:contactId', validateToken, async (req, res, next) => {
   const { contactId } = req.params; 
   try {
     const foundContact = await contactOps.getContactById(contactId);
@@ -49,8 +49,11 @@ router.get('/:contactId', async (req, res, next) => {
   }
 })
 
-router.post('/', validateSchema(contactValSchema), async (req, res, next) => {
+router.post('/', validateSchema(contactValSchema), validateToken, async (req, res, next) => {
   try {
+    req.body.owner = req.user.id;
+    console.log(req.body);
+
     const addedContact = await contactOps.addContact(req.body);
 
     res.status(201).json({
@@ -65,7 +68,7 @@ router.post('/', validateSchema(contactValSchema), async (req, res, next) => {
   }
 })
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete('/:contactId', validateToken, async (req, res, next) => {
   const { contactId } = req.params; 
   try {
     const deletedContact = await contactOps.removeContact(contactId);
@@ -86,7 +89,7 @@ router.delete('/:contactId', async (req, res, next) => {
   }
 })
 
-router.put('/:contactId', validateSchema(contactValSchema), async (req, res, next) => {
+router.put('/:contactId', validateSchema(contactValSchema), validateToken, async (req, res, next) => {
   const { contactId } = req.params;
   try {
     const updatedContact = await contactOps.updateContact(contactId, req.body);
@@ -107,7 +110,7 @@ router.put('/:contactId', validateSchema(contactValSchema), async (req, res, nex
   } 
 });
 
-router.patch("/:contactId/favorite", validateSchema(contactValSchemaFav), async (req, res, next) => {
+router.patch("/:contactId/favorite", validateSchema(contactValSchemaFav), validateToken, async (req, res, next) => {
   const { contactId } = req.params;
   try {
     const updatedContact = await contactOps.updateStatusContact(contactId, req.body);

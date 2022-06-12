@@ -4,11 +4,11 @@ const { ServerError} = require("./ServerError")
 //[details] is a single optional string that is transformed into array to conform to ServerError format
 class NotAuthorizedError extends ServerError {
   constructor(details = "", statusCode = 401, statusMessage = "Not authorized") {
-    super(null, statusCode, statusMessage);
-    if (details) {
-      this.details = [{
-        message: details,
-      }];
+    super(details, statusCode, statusMessage);
+    if (details && typeof details === "string") {
+        this.details = [{
+          message: details,
+        }];
     }
   }
 }

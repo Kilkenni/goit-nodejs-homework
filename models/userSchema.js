@@ -9,7 +9,7 @@ const JoiJwt = Joi.extend((Joi) => ({
     }; //split input into array on "."
   },
 }));
-const bcryptjs = require("bcryptjs");
+//const bcryptjs = require("bcryptjs");
 
 const userSchema = Schema({
     password: {
@@ -72,4 +72,4 @@ const userValSchema = Joi.object({
 //by this schema, token should be an "array" of base64URL strings previously separated by "."
 //note the use of JoiJwt that coerces the token into this array
 
-module.exports = { User, userValRegistration, userValLogin, userValSubscription};
+module.exports = { User, userValRegistration, userValLogin, userValSubscription, userValSchema};

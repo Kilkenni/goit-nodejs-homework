@@ -33,7 +33,7 @@ const contactValSchema = Joi.object({
   email: Joi.string().email().required(),
   phone: Joi.string().required(),
   favorite: Joi.boolean(),
-  owner: Joi.string().required(),
+  //owner: Joi.string().required(),
 });
 
 const contactValSchemaFav = Joi.object({
