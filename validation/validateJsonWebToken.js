@@ -10,7 +10,7 @@ const JoiJwt = Joi.extend((Joi) => ({
   },
 }));
 
-const { NoAuthError, NoTokenError, InvalidAuthTypeError, InvalidTokenError } = require("../errors/JwtError");
+const { NoAuthFoundError, NoTokenError, InvalidAuthTypeError, InvalidTokenError } = require("../errors/JwtError");
 
 const tokenSchema = JoiJwt.jwtArray().length(3).items(
   Joi.string().base64({
@@ -23,7 +23,7 @@ const validateToken = (req, res, next) => {
  
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    next(new NoAuthError());
+    next(new NoAuthFoundError());
     return;
   }
   const [authType, authToken] = authHeader.split(" ");

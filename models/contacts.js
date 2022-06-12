@@ -1,24 +1,24 @@
 const { Contact } = require("./contactSchema.js");
+const { ServerError, NotFoundError } = require("../errors/ServerError")
 
 async function listContacts() {
   try {
     const contacts = await Contact.find();
     return contacts;
   }
-  catch (error) {
-    console.error(error);
-    return undefined;
+  catch (mongooseError) {
+    throw new ServerError();
   };
 }
 
 async function getContactById(contactId) {
   try {
     const foundContact = await Contact.findById(contactId.toString());
-    return foundContact || false;
+    return foundContact || null;
   }
   catch (mongooseError) {
     //can be an ID cast error (ID format is wrong), it's still presented as 404 to the user
-    return false;
+    throw new NotFoundError(`Contact with id ${contactId} not found`);
   } 
 }
 
@@ -26,11 +26,11 @@ async function removeContact(contactId) {
   //contactId should be a String
   try {
     const contactForDeletion = await Contact.findOneAndDelete({ _id: contactId })
-    return contactForDeletion || false; //returning deleted contact, or false if it is null
+    return contactForDeletion || null; //returning deleted contact, or null if it is not found
   }
   catch (mongooseError) {
     //can be an ID cast error, it's presented as 404 to the user
-    return false;
+    throw new NotFoundError(`Contact with id ${contactId} not found. Invalid id?`);
   }
 }
 
@@ -38,14 +38,14 @@ async function addContact(body) {
   try {
     const localBody = { ...body };
     if (!localBody.favorite) {
-      localBody.favorite = false;
+      localBody.favorite = false; //default
     }
     const contactWithId = await Contact.create(localBody);
 
     return contactWithId; //return new contact with id 
   }
   catch (mongooseError) {
-    return 500;
+    throw new ServerError();
   }
 }
 
@@ -53,11 +53,11 @@ async function updateContact(contactId, body) {
   try {
     const nextContact = await Contact.findOneAndUpdate({ _id: contactId }, body, { returnDocument: "after" });
 
-    return nextContact || false; //update returns null if the contact is not found, hence we return "false"
+    return nextContact || null; //update returns null if the contact is not found, hence we return "null"
   }
   catch (mongooseError) {
     //can be an ID cast error (ID format is wrong), it's still presented as 404 to the user
-    return false;
+    throw new NotFoundError(`Contact with id ${contactId} not found. Invalid id?`);
   } 
 }
 
@@ -66,11 +66,11 @@ async function updateStatusContact(contactId, body) {
     const { favorite } = body;
     const nextContact = await Contact.findByIdAndUpdate(contactId, {favorite}, { new: true });
 
-    return nextContact || false; //update returns null if the contact is not found, hence we return "false"
+    return nextContact || null; //update returns null if the contact is not found, hence we return "null"
   }
   catch (mongooseError) {
     //can be an ID cast error (ID format is wrong), it's still presented as 404 to the user
-    return false;
+    throw new NotFoundError(`Contact with id ${contactId} not found. Invalid id?`);
   }
 }
 

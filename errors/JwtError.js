@@ -1,10 +1,10 @@
 const { ServerError} = require("./ServerError")
 
+//Generic auth error from which all others are derived
+//[details] is a single optional string that is transformed into array to conform to ServerError format
 class NotAuthorizedError extends ServerError {
-  constructor(details = "") {
-    super();
-    this.statusCode = 401;
-    this.message = "Not authorized";
+  constructor(details = "", statusCode = 401, statusMessage = "Not authorized") {
+    super(null, statusCode, statusMessage);
     if (details) {
       this.details = [{
         message: details,
@@ -13,21 +13,15 @@ class NotAuthorizedError extends ServerError {
   }
 }
 
-class NoAuthError extends NotAuthorizedError {
-  constructor() {
-    super();
-    this.details = [{
-      message: `No authorization header found`,
-    }];
+class NoAuthFoundError extends NotAuthorizedError {
+  constructor(details = "No authorization header found", statusCode = 401, statusMessage = "Not authorized") {
+    super(details, statusCode, statusMessage);
   }
 }
 
 class NoTokenError extends NotAuthorizedError {
-  constructor() {
-    super();
-    this.details = [{
-      message: `Authorization header found but there's no token in it`,
-    }];
+  constructor(details = "Authorization header found but it lacks a token", statusCode = 401, statusMessage = "Not authorized") {
+    super(details, statusCode, statusMessage);
   }
 }
 
@@ -40,13 +34,10 @@ class InvalidAuthTypeError extends NotAuthorizedError {
   }
 }
 
-
 class InvalidTokenError extends NotAuthorizedError {
-  constructor(details = [{ message: `Token verification failed. Invalid or expired token?`, }]) {
-    
-    super();
-    this.details = details;
+  constructor(details = `Token verification failed. Invalid or expired token?`, statusCode = 401, statusMessage = "Not authorized") {
+    super(details, statusCode, statusMessage);
   }
 }
 
-module.exports = { NotAuthorizedError, NoAuthError, NoTokenError, InvalidAuthTypeError, InvalidTokenError };
+module.exports = { NotAuthorizedError, NoAuthFoundError, NoTokenError, InvalidAuthTypeError, InvalidTokenError };

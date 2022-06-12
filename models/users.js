@@ -34,10 +34,10 @@ async function loginUser(email, password) {
   try {
     const foundUser = await User.findOne({ email: email });
     if (!foundUser) {
-      throw new LoginError(); //can't find by this email
+      throw new LoginError("email"); //can't find by this email
     }
     if (!await bcryptjs.compare(password, foundUser.password)) {
-      throw new LoginError(); //password is incorrect
+      throw new LoginError("password"); //password is incorrect
     };
 
     const tokenPayload = {
@@ -56,7 +56,7 @@ async function loginUser(email, password) {
     if (mongooseError instanceof DatabaseError) {
       throw mongooseError; //we know this error, throw it further
     }
-    throw new DatabaseError;
+    throw new DatabaseError();
   }
 }
 
@@ -70,7 +70,7 @@ async function logoutUser(id) {
     if (mongooseError instanceof DatabaseError) {
       throw mongooseError; //we know this error, throw it further
     }
-    throw new DatabaseError;
+    throw new DatabaseError();
   }
 }
 
@@ -84,7 +84,7 @@ async function getUserById(id){
     if (mongooseError instanceof DatabaseError) {
       throw mongooseError; //we know this error, throw it further
     }
-    throw new DatabaseError;
+    throw new DatabaseError();
   }
 }
 
