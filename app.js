@@ -3,6 +3,7 @@ const logger = require('morgan')
 const cors = require('cors')
 
 const contactsRouter = require('./routes/api/contacts')
+const usersRouter = require("./routes/api/users");
 
 const app = express();
 
@@ -41,7 +42,9 @@ app.use(logger(formatsLogger))
 app.use(cors())
 app.use(express.json())
 
-app.use('/api/contacts', contactsRouter)
+app.use('/api/contacts', contactsRouter);
+
+app.use("/api/users", usersRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found.' })
@@ -51,7 +54,13 @@ app.use((err, req, res, next) => {
   //if we are in dev mode, winston is defined, so we can use it directly to show the error in the console
   //why not console.log? Because we may want to log into a file instead. Moreover, console.log is synchronous. Using winston is good for practice.
   if (winston) {
-    winston.error(`Error processing request. statusCode=${err.statusCode}, message=${err.message}`);
+    const { statusCode, message, details } = err;
+    winston.error(`Error processing request. statusCode = ${statusCode}, message = ${message}`);
+    if (details) {
+      details.forEach((detail) => {
+        return winston.error(`Reason: ${detail.message}`);
+      })
+    }
   }
   next(err);
 });
@@ -59,7 +68,7 @@ app.use((err, req, res, next) => {
 app.use((err, req, res, next) => {
   const { statusCode = 500, message = "Internal server error.", details } = err;
   if (!err.statusCode) {
-    console.error("Non-HTML error!"); //ideally this should never happen: we must eliminate all general runtime errors before prod
+    console.error("Non-HTTP error!"); //ideally this should never happen: we must eliminate all general runtime errors before prod
     throw err;
   }
   //force messages to conform to HW description
@@ -72,11 +81,14 @@ app.use((err, req, res, next) => {
     if (badReqMessage === '"favorite" is required') {
       badReqMessage = "missing field favorite";
     }
-    res.status(statusCode).json({ message: badReqMessage });
+    res.status(statusCode).json({
+      type: (details)? "Validation error" : "",
+      message: badReqMessage,
+    });
     return;
   }
   //end force
-  res.status(statusCode).json({ message, details });
+  res.status(statusCode).json({ message });
 })
 
 module.exports = app;
