@@ -1,19 +1,37 @@
-const { Contact } = require("./contactSchema.js");
-const { ServerError, NotFoundError } = require("../errors/ServerError")
+/**
+ * Operations on the collection of contacts in MongoDB
+ * @module contacts.js
+ */
 
-async function listContacts() {
+const { Contact } = require("./contactSchema.js");
+const { ServerError, NotFoundError } = require("../errors/ServerError");
+const { NotAuthorizedError } = require("../errors/JwtError");
+
+/**
+ * Returns the contacts belonging to a certain user
+ * @param {!string} ownerId 
+ * @returns { Object } contacts, total
+ */
+async function listContacts(ownerId) {
   try {
-    const contacts = await Contact.find();
-    return contacts;
+    const total = await Contact.countDocuments({owner: ownerId});
+    const contacts = await Contact.find({owner: ownerId}).select(["-owner"]);
+    return { contacts, total };
   }
   catch (mongooseError) {
     throw new ServerError();
   };
 }
 
-async function getContactById(contactId) {
+/**
+ * Returns a single contact
+ * @param {!string} contactId 
+ * @param {!string} ownerId 
+ * @returns {?Object} found contact
+ */
+async function getContactById(contactId, ownerId) {
   try {
-    const foundContact = await Contact.findById(contactId.toString());
+    const foundContact = await Contact.findOne({ _id: contactId, owner: ownerId }).select(["-owner"]);
     return foundContact || null;
   }
   catch (mongooseError) {
@@ -22,10 +40,15 @@ async function getContactById(contactId) {
   } 
 }
 
-async function removeContact(contactId) {
-  //contactId should be a String
+/**
+ * Deletes contact from the DB
+ * @param {!string} contactId 
+ * @param {!string} ownerId
+ * @returns {?Object} deleted contact
+ */
+async function removeContact(contactId, ownerId) {
   try {
-    const contactForDeletion = await Contact.findOneAndDelete({ _id: contactId })
+    const contactForDeletion = await Contact.findOneAndDelete({ _id: contactId, owner: ownerId }).select(["-owner"]);
     return contactForDeletion || null; //returning deleted contact, or null if it is not found
   }
   catch (mongooseError) {
@@ -34,6 +57,11 @@ async function removeContact(contactId) {
   }
 }
 
+/**
+ * Adds new contact for current user
+ * @param {!Object} body - includes owner
+ * @returns {Object} new contact
+ */
 async function addContact(body) {
   try {
     const localBody = { ...body };
@@ -49,9 +77,16 @@ async function addContact(body) {
   }
 }
 
-async function updateContact(contactId, body) {
+/**
+ * Updates contact with new data (partially or entirely)
+ * @param {!string} contactId 
+ * @param {!string} ownerId
+ * @param {!Object} body 
+ * @returns {?Object} Updated contact
+ */
+async function updateContact(contactId, ownerId, body) {
   try {
-    const nextContact = await Contact.findOneAndUpdate({ _id: contactId }, body, { returnDocument: "after" });
+    const nextContact = await Contact.findOneAndUpdate({ _id: contactId, owner: ownerId }, body, { returnDocument: "after" }).select(["-owner"]);
 
     return nextContact || null; //update returns null if the contact is not found, hence we return "null"
   }
@@ -61,10 +96,17 @@ async function updateContact(contactId, body) {
   } 
 }
 
-async function updateStatusContact(contactId, body) {
+/**
+ * Updates "favorite" status for contact
+ * @param {!string} contactId 
+ * @param {!string} ownerId
+ * @param {!Object} body 
+ * @returns {?Object} updated contact
+ */
+async function updateStatusContact(contactId, ownerId, body) {
   try {
     const { favorite } = body;
-    const nextContact = await Contact.findByIdAndUpdate(contactId, {favorite}, { new: true });
+    const nextContact = await Contact.findOneAndUpdate({ _id: contactId, owner: ownerId }, {favorite}, { new: true }).select("-owner");
 
     return nextContact || null; //update returns null if the contact is not found, hence we return "null"
   }

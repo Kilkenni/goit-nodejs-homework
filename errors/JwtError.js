@@ -1,7 +1,7 @@
 const { ServerError} = require("./ServerError")
 
-//Generic auth error from which all others are derived
-//[details] is a single optional string that is transformed into array to conform to ServerError format
+/** Generic auth error from which all others are derived
+[details] is a single optional string that is transformed into array to conform to ServerError format */
 class NotAuthorizedError extends ServerError {
   constructor(details = "", statusCode = 401, statusMessage = "Not authorized") {
     super(details, statusCode, statusMessage);
@@ -40,4 +40,10 @@ class InvalidTokenError extends NotAuthorizedError {
   }
 }
 
-module.exports = { NotAuthorizedError, NoAuthFoundError, NoTokenError, InvalidAuthTypeError, InvalidTokenError };
+class TokenMismatchError extends NotAuthorizedError {
+  constructor(details = `Provided token does not match the active token in DB`, statusCode = 401, statusMessage = "Not authorized") {
+    super(details, statusCode, statusMessage);
+  }
+}
+
+module.exports = { NotAuthorizedError, NoAuthFoundError, NoTokenError, InvalidAuthTypeError, InvalidTokenError, TokenMismatchError };

@@ -62,7 +62,7 @@ async function loginUser(email, password) {
 
 async function logoutUser(id) {
   try {
-    const loggedOutUser = await User.findByIdAndUpdate(id, {token: null}, {new: true});
+    const loggedOutUser = await User.findByIdAndUpdate(id, {token: null}, {new: true}).select(["email", "subscription", "token"]);
     
     return loggedOutUser;
   }
@@ -76,7 +76,7 @@ async function logoutUser(id) {
 
 async function getUserById(id){
   try {
-    const currentUser = await User.findById(id);
+    const currentUser = await User.findById(id).select(["email", "subscription", "token"]);
     
     return currentUser;
   }
@@ -90,7 +90,7 @@ async function getUserById(id){
 
 async function updateSubscription(id, subscription){
   try {
-    const updatedUser = await User.findByIdAndUpdate(id, {subscription}, {new: true});
+    const updatedUser = await User.findByIdAndUpdate(id, {subscription}, {new: true}).select(["email", "subscription"]);
     
     return updatedUser;
   }

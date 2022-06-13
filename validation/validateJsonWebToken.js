@@ -10,7 +10,9 @@ const JoiJwt = Joi.extend((Joi) => ({
   },
 }));
 
-const { NoAuthFoundError, NoTokenError, InvalidAuthTypeError, InvalidTokenError } = require("../errors/JwtError");
+const { NotAuthorizedError, NoAuthFoundError, NoTokenError, InvalidAuthTypeError, InvalidTokenError, TokenMismatchError } = require("../errors/JwtError");
+
+const userOps = require('../models/users');
 
 const tokenSchema = JoiJwt.jwtArray().length(3).items(
   Joi.string().base64({
@@ -19,7 +21,7 @@ const tokenSchema = JoiJwt.jwtArray().length(3).items(
   })
 );
 
-const validateToken = (req, res, next) => {
+const validateToken = async (req, res, next) => {
  
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -42,7 +44,17 @@ const validateToken = (req, res, next) => {
   }
   
   try {
-    const tokenPayload = jwt.verify(authToken, process.env.JWT_KEY, { maxAge: "7d" }); //consider tokens older than a week invalid!
+    const tokenPayload = jwt.verify(authToken, process.env.JWT_KEY, { ignoreExpiration: true }); //ignore expiration time on tokens. Normally we don't want it. This is enabled only for this practice backend
+
+    const foundUser = await userOps.getUserById(tokenPayload.id);
+    if (!foundUser) {
+      next(new NotAuthorizedError("User with corresponding id not found"));
+      return;
+    }
+    if (foundUser.token !== authToken) {
+      next(new TokenMismatchError());
+      return;
+    }
 
     req.user = tokenPayload;
     next();
