@@ -5,18 +5,78 @@
 
 const { Contact } = require("./contactSchema.js");
 const { ServerError, NotFoundError } = require("../errors/ServerError");
-const { NotAuthorizedError } = require("../errors/JwtError");
+
+/**
+ * Tries to cast a part of URL query into the certain type
+ * @param {!string} parameter - original parameter from query
+ * @param {("Boolean"|"Integer")} typeName - name of the type to cast parameter to
+ * @returns {?*} parsed parameter (if valid) or null (if invalid)
+ */
+function parseQueryParamType(parameter, typeName) {
+  switch (typeName) {
+    case "Boolean":
+      switch (parameter) { // "true"|"false" => Boolean
+        case "true":
+          return true;
+        case "false":
+          return false;
+        default:
+          return null;
+      }
+    case "Integer":
+      return parseInt(parameter) || null; // Int OR null if NaN
+    default:
+      return null; //typeName not supported, ignoring parameter
+  }
+}
+
+/**
+ * Tries to convert parameters from URL query to JS data types
+ * @param {!Object} query - original URL query with strings
+ * @returns {Object} query with properly typed params or {} if no params were typed successfully
+ */
+function parseQueryTypes(query) {
+  if (Object.keys(query).length === 0) {
+    return query;
+  }
+  const favorite = parseQueryParamType(query.favorite, "Boolean");
+  const page = parseQueryParamType(query.page, "Integer");
+  const limit = parseQueryParamType(query.limit, "Integer");
+
+  //add only fields that are not null ("false" is valid), check validity
+  const typedQuery = {
+    ...(favorite !== null && {favorite}),
+    ...((limit !== null && limit > 0) && { limit }),
+    ...((page !== null && limit !== null && page > 0) && {page}), //page only makes sense if we set its size. If there is no "limit" , ignore it
+  };  
+  return typedQuery;
+}
 
 /**
  * Returns the contacts belonging to a certain user
  * @param {!string} ownerId 
- * @returns { Object } contacts, total
+ * @param {Object} queryParams - query params from path, parsed into corresponding data types
+ * @param {number} [maxEntries=20] - maximum number of entries returned, defaults to 20
+ * @returns { Object.<Object[], number> } contacts, total
  */
-async function listContacts(ownerId) {
+async function listContacts(ownerId, queryParams, maxEntries = 20) {
   try {
-    const total = await Contact.countDocuments({owner: ownerId});
-    const contacts = await Contact.find({owner: ownerId}).select(["-owner"]);
-    return { contacts, total };
+    const { favorite, limit, page } = parseQueryTypes(queryParams);
+    const skip = limit * (page - 1) || 0;
+    const results = (limit && limit <= maxEntries) ? limit : maxEntries;
+
+    const total = await Contact.countDocuments({
+        owner: ownerId,
+        ...(favorite !== undefined && { favorite }),
+    });
+    const contacts = await Contact.find({
+      owner: ownerId,
+      ...(favorite !== undefined && {favorite})
+    })
+      .select(["-owner"])
+      .limit(results)
+      .skip(skip);
+    return { contacts, total, page };
   }
   catch (mongooseError) {
     throw new ServerError();
