@@ -1,20 +1,21 @@
 const express = require('express');
 
-const ContactsError = require("./ContactsError.js");
-const contactOps = require('../../models/contacts')
+const router = express.Router();
 
-const router = express.Router()
+const contactOps = require('../../models/contacts');
+const { /* ServerError,*/ NotFoundError } = require("../../errors/ServerError.js");
 
 //for checking req.body with Joi
-const contactSchema = require("../../validation/contactSchema.js");
-const validateSchema = require("../../validation/validateRequest.js");
-const contactFavSchema = require('../../validation/contactFavSchema.js');
+const { contactValSchema, contactValSchemaFav } = require("../../models/contactSchema.js");
+const validateSchema = require("../../validation/validateSchema.js");
+
+const { validateToken } = require("../../validation/validateJsonWebToken")
 
 // endpoint: /api/contacts
 
-router.get('/', async (req, res, next) => {
+router.get('/', validateToken, async (req, res, next) => {
   try {
-    const contacts = await contactOps.listContacts();
+    const contacts = await contactOps.listContacts(req.user.id);
 
     res.status(200).json({
       code: 200,
@@ -28,13 +29,13 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-router.get('/:contactId', async (req, res, next) => {
+router.get('/:contactId', validateToken, async (req, res, next) => {
   const { contactId } = req.params; 
   try {
-    const foundContact = await contactOps.getContactById(contactId);
-    if (foundContact === false) {
-    //this is a clear error: if the user has a valid ID, there should be a result. Unless the ID is (already) invalid. In which case...
-      throw new ContactsError(404, `Contact with id=${contactId} not found`)
+    const foundContact = await contactOps.getContactById(contactId.toString(), req.user.id);
+    if (!foundContact) {
+      //clear error: if the user has a valid ID, there should be a result. Unless the ID is (already) invalid. In which case...
+      throw new NotFoundError(`Contact with id=${contactId} not found`);
     }
 
     res.status(200).json({
@@ -49,14 +50,10 @@ router.get('/:contactId', async (req, res, next) => {
   }
 })
 
-router.post('/', validateSchema(contactSchema, ContactsError), async (req, res, next) => {
+router.post('/', validateSchema(contactValSchema), validateToken, async (req, res, next) => {
   try {
+    req.body.owner = req.user.id; //embedding owner ID in contact for ref
     const addedContact = await contactOps.addContact(req.body);
-  
-    if (addedContact === 500) {
-      //we failed to add contact due to writeFile error
-      throw new ContactsError();
-    }
 
     res.status(201).json({
       code: 201,
@@ -70,16 +67,13 @@ router.post('/', validateSchema(contactSchema, ContactsError), async (req, res, 
   }
 })
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete('/:contactId', validateToken, async (req, res, next) => {
   const { contactId } = req.params; 
   try {
-    const deletedContact = await contactOps.removeContact(contactId);
+    const deletedContact = await contactOps.removeContact(contactId, req.user.id);
   
-    if (deletedContact === false) {
-      throw new ContactsError(404, `Contact with id=${contactId} not found`);
-    }
-    if(deletedContact === 500) {
-      throw new ContactsError();
+    if (!deletedContact) {
+      throw new NotFoundError(`Contact with id=${contactId} not found`);
     }
 
     res.status(200).json({
@@ -94,13 +88,13 @@ router.delete('/:contactId', async (req, res, next) => {
   }
 })
 
-router.put('/:contactId', validateSchema(contactSchema, ContactsError), async (req, res, next) => {
+router.put('/:contactId', validateSchema(contactValSchema), validateToken, async (req, res, next) => {
   const { contactId } = req.params;
   try {
-    const updatedContact = await contactOps.updateContact(contactId, req.body);
+    const updatedContact = await contactOps.updateContact(contactId, req.user.id, req.body);
   
-    if (updatedContact === false) {
-      throw new ContactsError(404, `Contact with id=${contactId} not found`);
+    if (!updatedContact) {
+      throw new NotFoundError(`Contact with id=${contactId} not found`);
     }
 
     res.status(200).json({
@@ -115,13 +109,13 @@ router.put('/:contactId', validateSchema(contactSchema, ContactsError), async (r
   } 
 });
 
-router.patch("/:contactId/favorite", validateSchema(contactFavSchema, ContactsError), async (req, res, next) => {
+router.patch("/:contactId/favorite", validateSchema(contactValSchemaFav), validateToken, async (req, res, next) => {
   const { contactId } = req.params;
   try {
-    const updatedContact = await contactOps.updateStatusContact(contactId, req.body);
+    const updatedContact = await contactOps.updateStatusContact(contactId, req.user.id, req.body);
   
-    if (updatedContact === false) {
-      throw new ContactsError(404, `Contact with id=${contactId} not found`);
+    if (!updatedContact) {
+      throw new NotFoundError(`Contact with id=${contactId} not found`);
     }
 
     res.status(200).json({
@@ -135,7 +129,5 @@ router.patch("/:contactId/favorite", validateSchema(contactFavSchema, ContactsEr
     return;
   }
 });
-
-//TODO: PATCH /api/contacts/:contactId/favorite
 
 module.exports = router;
