@@ -47,7 +47,7 @@ function parseQueryTypes(query) {
   const typedQuery = {
     ...(favorite !== null && {favorite}),
     ...((limit !== null && limit > 0) && { limit }),
-    ...((page !== null && limit !== null && page > 0) && {page}), //page only makes sense if we set its size. If there is no "limit" , ignore it
+    ...((page !== null && page > 0) && {page}), //page only makes sense if we set its size. If there is no "limit" , ignore it
   };  
   return typedQuery;
 }
@@ -61,9 +61,9 @@ function parseQueryTypes(query) {
  */
 async function listContacts(ownerId, queryParams, maxEntries = 20) {
   try {
-    const { favorite, limit, page } = parseQueryTypes(queryParams);
-    const skip = limit * (page - 1) || 0;
-    const results = (limit && limit <= maxEntries) ? limit : maxEntries;
+    const { favorite, limit, page } = parseQueryTypes(queryParams); 
+    const validLimit = (limit && limit <= maxEntries) ? limit : maxEntries;
+    const skip = validLimit * (page - 1) || 0;
 
     const total = await Contact.countDocuments({
         owner: ownerId,
@@ -74,7 +74,7 @@ async function listContacts(ownerId, queryParams, maxEntries = 20) {
       ...(favorite !== undefined && {favorite})
     })
       .select(["-owner"])
-      .limit(results)
+      .limit(validLimit)
       .skip(skip);
     return { contacts, total, page };
   }

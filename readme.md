@@ -121,16 +121,33 @@ On **success** returns `200`+ JSON:
 
     Authorization: Bearer <valid JWT token>
 
-On **unauthorized access** (i.e. a user tries to get/edit/delete contactId that he does not own) a **404** error ("Not found") is returned.
+On **unauthorized access** (i.e. a user tries to get/edit/delete contactId that he does not own) a **404** error ("Not found") is returned.2
+
+---
 
 #### GET /
+
+This request supports query parameters:
+
+Pagination in the format of `page=1&limit=20`. `page` and `limit` are mutually optional, in any order.
+
+- `limit` defaults to 20, accepts only positive integers (other values are ignored)
+- `page` defaults to 1, accepts only positive integers (other values are ignored)
+- If requested page contains no entries (contacts out of bounds), contacts will be an empty array
+
+Filter by favorite field in the format of `favorite=true|false`.
+
+- `favorite` accepts only booleans (true or false), lowercase (other values are ignored)
 
 On **success** returns `200`+ JSON with this _data_ field:
 
     {
       contacts:[{}, {}, ...],
       total: <total number of contacts for this user>
+      [page]: <requested page>
     }
+
+Note that `total` includes _filtered_ results (i.e. if `favorite` is set, only corresponding entries wil be counted).
 
 ---
 
