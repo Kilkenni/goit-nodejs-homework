@@ -8,12 +8,22 @@ async function hashPassword(plainTextPassword) {
   return await bcryptjs.hash(plainTextPassword, 11);
 }
 
-async function registerUser(email, password, subscription = "starter") {
+/**
+ * 
+ * @param {!String} email 
+ * @param {!String} password 
+ * @param {("starter"|"pro"|"business")} [subscription=starter] 
+ * @param {!String} avatarURL - path to avatar image
+ * @returns {!Object} User data with ID
+ */
+
+async function registerUser(email, password, subscription = "starter", avatarURL) {
   try {
     const userWithId = await User.create({
       email,
       password: await hashPassword(password),
       subscription,
+      avatarURL,
     });
 
     return userWithId; //return new contact with id 

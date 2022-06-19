@@ -1,4 +1,5 @@
 const express = require("express");
+const gravatar = require("gravatar");
 
 const usersRouter = express.Router();
 
@@ -18,7 +19,8 @@ function filterUserEmailSub(userData) {
 usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), async (req, res, next) => {
   try {
     const { email, password, subscription } = req.body;
-    const registeredUser = await userOps.registerUser(email, password, subscription);
+    const avatarURL = gravatar.url(email, { size: "200", default: "retro"}, true); //gets gravatar image URL or default pixel one generated from email hash if not found
+    const registeredUser = await userOps.registerUser(email, password, subscription , avatarURL);
 
     res.status(201).json({
       user: filterUserEmailSub(registeredUser),
