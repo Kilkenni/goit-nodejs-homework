@@ -18,6 +18,6 @@ router.use(async (req, res, next) => {
 })
 */
 
-router.use('/', express.static(publicPath + "/"));
+router.use('/', express.static(publicPath));
 
 module.exports = router;

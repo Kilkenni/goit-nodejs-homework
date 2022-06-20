@@ -2,6 +2,7 @@ const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const { User } = require("./userSchema.js");
+const { removeAvatar: removeOldAvatar} = require("../files/avatars");
 const { DatabaseError, DuplicateKeyError, LoginError } = require("../errors/DbError");
 
 async function hashPassword(plainTextPassword) {
@@ -112,10 +113,33 @@ async function updateSubscription(id, subscription){
   }
 }
 
+/**
+ * Updates URL path to avatar for a single user
+ * @param {!String} id - User ID
+ * @param {!String} avatarURL - relative to server's public dir
+ * @returns {Object} - user data with OLD avatarURL
+ */
+async function updateAvatar(id, avatarURL) {
+  try {
+    const prevUser = await User.findByIdAndUpdate(id, {avatarURL}, {new: false}).select(["email", "avatarURL"]);
+    //console.log("Prev avatar is:" + prevUser.avatarURL)
+
+    await removeOldAvatar(prevUser.avatarURL); //cleanup previous avatar file
+    return prevUser;
+  }
+  catch (mongooseError) {
+    if (mongooseError instanceof DatabaseError) {
+      throw mongooseError; //we know this error, throw it further
+    }
+    throw new DatabaseError;
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
   getUserById,
   updateSubscription,
+  updateAvatar,
 };
