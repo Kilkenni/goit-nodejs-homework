@@ -3,6 +3,7 @@ const express = require("express");
 const usersRouter = express.Router();
 
 const userOps = require('../../models/users');
+const userControllers = require("./controllers/users");
 const { ServerError } = require("../../errors/ServerError.js");
 const { NotAuthorizedError } = require("../../errors/JwtError");
 
@@ -10,10 +11,7 @@ const {userValRegistration, userValLogin, userValSubscription } = require("../..
 const validateSchema = require("../../validation/validateSchema.js");
 const { validateToken } = require("../../validation/validateJsonWebToken");
 
-function filterUserEmailSub(userData) {
-  const { email, subscription } = userData;
-  return { email, subscription };
-}
+const filterUserEmailSub = require("./controllers/users/util");
 
 usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), async (req, res, next) => {
   try {
@@ -30,21 +28,7 @@ usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), as
   }
 });
 
-usersRouter.post("/login", validateSchema(userValLogin, ServerError), async (req, res, next) => {
-  try {
-    const { email, password} = req.body;
-    const loggedUser = await userOps.loginUser(email, password);
-
-    res.status(201).json({
-      token: loggedUser.token,
-      user: filterUserEmailSub(loggedUser),
-    })
-  }
-  catch (error) {
-    next(error);
-    return;
-  }
-});
+usersRouter.post("/login", validateSchema(userValLogin, ServerError), userControllers.login);
 
 usersRouter.get("/logout", validateToken, async (req, res, next) => {
   try {
