@@ -1,19 +1,19 @@
-const login = require("./login");
+const signup = require("./signup");
 const userOps = require('../../../../models/users');
 
-describe("test user login controller - Logging in", () => {
+describe("test users signup controller - Registration", () => {
 
   const mockedUser = {
     email: "user@email.com",
     subscription: "subscriptionType",
-    token: "someToken",
   }
-  userOps.loginUser = jest.fn(() => Promise.resolve(mockedUser));
+  userOps.registerUser = jest.fn(() => Promise.resolve(mockedUser));
 
   const mockNext = jest.fn((error) => { throw error });
   const mockReq = {body: {
       email: "user@email.com",
       password: "userPassword",
+      subscription: "subscriptionType",
     }
   }
   let mockRes = {
@@ -21,14 +21,15 @@ describe("test user login controller - Logging in", () => {
     json: jest.fn((data) => data),
   };
   
-  test("Successful login", async () => {
-    const result = await login(mockReq, mockRes, mockNext);
+  test("Successful registration", async () => {
+    const result = await signup(mockReq, mockRes, mockNext);
 
     expect(mockRes.status).toHaveBeenCalledTimes(1);
-    expect(mockRes.status).toHaveBeenCalledWith(200);
-    expect(result.token).toBeDefined();
-    expect(result).toHaveProperty(["user", "email"]);
-    expect(result).toHaveProperty(["user", "subscription"]);
+    expect(mockRes.status).toHaveBeenCalledWith(201);
+    expect(result.token).toBeUndefined();
+    expect(result).toHaveProperty("user.email");
+    expect(result).toHaveProperty("user.subscription");
+    expect(result.user.password).toBeUndefined();
     expect(typeof result.user.email).toBe("string");
     expect(typeof result.user.subscription).toBe("string");
     expect(mockNext).toHaveBeenCalledTimes(0); //expect no errors

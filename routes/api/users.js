@@ -13,20 +13,7 @@ const { validateToken } = require("../../validation/validateJsonWebToken");
 
 const filterUserEmailSub = require("./controllers/users/util");
 
-usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), async (req, res, next) => {
-  try {
-    const { email, password, subscription } = req.body;
-    const registeredUser = await userOps.registerUser(email, password, subscription);
-
-    res.status(201).json({
-      user: filterUserEmailSub(registeredUser),
-    })
-  }
-  catch (error) {
-    next(error);
-    return;
-  }
-});
+usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), userControllers.signup);
 
 usersRouter.post("/login", validateSchema(userValLogin, ServerError), userControllers.login);
 
