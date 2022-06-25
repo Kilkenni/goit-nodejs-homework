@@ -1,9 +1,13 @@
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
+
+const sendgridMail = require('@sendgrid/mail');
+sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const { User } = require("./userSchema.js");
 const { removeAvatar: removeOldAvatar} = require("../files/avatars");
-const { DatabaseError, DuplicateKeyError, LoginError } = require("../errors/DbError");
+const { DatabaseError, DuplicateKeyError, LoginError, NotVerifiedUserError, VerifiedUserError } = require("../errors/DbError");
 
 async function hashPassword(plainTextPassword) {
   return await bcryptjs.hash(plainTextPassword, 11);
@@ -62,11 +66,50 @@ async function verifyUserEmail(verificationToken) {
   }
 }
 
+async function sendVerificationEmail(email, ignoreChecks = false) {
+  try {
+    const nonverifiedUser = await User.findOne({ email: email });
+    const verificationToken = nonverifiedUser.verificationToken; //uuidv4();
+    console.log(verificationToken)
+    
+    /*   
+    const msg = {
+      to: 'cgustu@gmail.com', // Change to your recipient
+      from: 'trinityblood@i.ua', // Change to your verified sender
+      subject: 'Sending with SendGrid is Fun',
+      text: 'and easy to do anywhere, even with Node.js',
+      html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+    }
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log('Email sent')
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+    */
+    
+    return false;
+    
+    //VerifiedUserError()
+  }
+  catch (mongooseError) {
+    if (mongooseError instanceof DatabaseError) {
+      throw mongooseError; //we know this error, throw it further
+    }
+    throw new DatabaseError();
+  }
+}
+
 async function loginUser(email, password) {
   try {
     const foundUser = await User.findOne({ email: email });
     if (!foundUser) {
       throw new LoginError("email"); //can't find by this email
+    }
+    if (!foundUser.verify) {
+      throw new NotVerifiedUserError();
     }
     if (!await bcryptjs.compare(password, foundUser.password)) {
       throw new LoginError("password"); //password is incorrect
@@ -159,6 +202,7 @@ async function updateAvatar(id, avatarURL) {
 module.exports = {
   registerUser,
   verifyUserEmail,
+  sendVerificationEmail,
   loginUser,
   logoutUser,
   getUserById,

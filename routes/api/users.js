@@ -11,7 +11,7 @@ const { ServerError, NotFoundError } = require("../../errors/ServerError.js");
 const { NotAuthorizedError } = require("../../errors/JwtError");
 const { NoFileUploadedError, InvalidFileError } = require("../../errors/FileError.js");
 
-const {userValRegistration, userValLogin, userValSubscription } = require("../../models/userSchema.js");
+const {userValRegistration, userValVerification, userValLogin, userValSubscription } = require("../../models/userSchema.js");
 const validateSchema = require("../../validation/validateSchema.js");
 const { validateToken } = require("../../validation/validateJsonWebToken");
 
@@ -45,10 +45,29 @@ usersRouter.post("/login", validateSchema(userValLogin, ServerError), async (req
     const { email, password} = req.body;
     const loggedUser = await userOps.loginUser(email, password);
 
-    res.status(201).json({
+    res.status(200).json({
       token: loggedUser.token,
       user: filterUserEmailSub(loggedUser),
     })
+  }
+  catch (error) {
+    next(error);
+    return;
+  }
+});
+
+usersRouter.post("/verify", validateSchema(userValVerification), async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const foundUser = await userOps.sendVerificationEmail(email);
+
+    if (!foundUser) {
+      throw new NotFoundError(`No user with email=${email} found`, 404, "User not found");
+    }
+
+    res.status(200).json({
+      "message": "Verification email sent"
+    });
   }
   catch (error) {
     next(error);
@@ -166,28 +185,5 @@ usersRouter.use((err, req, res, next) => {
   }
   next(err);
 });
-
-/*
-// using Twilio SendGrid's v3 Node.js Library
-// https://github.com/sendgrid/sendgrid-nodejs
-//javascript
-const sgMail = require('@sendgrid/mail')
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-const msg = {
-  to: 'cgustu@gmail.com', // Change to your recipient
-  from: 'trinityblood@i.ua', // Change to your verified sender
-  subject: 'Sending with SendGrid is Fun',
-  text: 'and easy to do anywhere, even with Node.js',
-  html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-}
-sgMail
-  .send(msg)
-  .then(() => {
-    console.log('Email sent')
-  })
-  .catch((error) => {
-    console.error(error)
-  })
-*/
 
 module.exports = usersRouter;
