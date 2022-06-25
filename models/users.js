@@ -41,6 +41,27 @@ async function registerUser(email, password, subscription = "starter", avatarURL
   }
 }
 
+/**
+ * Marks user as "email verified". Finishes successfully only once for a single token
+ * @param {!string} verificationToken
+ */
+async function verifyUserEmail(verificationToken) {
+  try {
+    const verifiedUser = await User.findOneAndUpdate({ verificationToken: verificationToken }, {
+      verificationToken: null,
+      verify: true,
+    }, { new: true });
+
+    return verifiedUser;
+  }
+  catch (mongooseError) {
+    if (mongooseError instanceof DatabaseError) {
+      throw mongooseError; //we know this error, throw it further
+    }
+    throw new DatabaseError();
+  }
+}
+
 async function loginUser(email, password) {
   try {
     const foundUser = await User.findOne({ email: email });
@@ -137,6 +158,7 @@ async function updateAvatar(id, avatarURL) {
 
 module.exports = {
   registerUser,
+  verifyUserEmail,
   loginUser,
   logoutUser,
   getUserById,

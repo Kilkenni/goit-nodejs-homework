@@ -33,6 +33,14 @@ const userSchema = Schema({
     type: String,
     default: null,
   },
+  verify: { //bool - is email verified?
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    required: [true, 'Verify token is required'],
+  },
 }, { timestamps: true });
   
 //We hash password in the userOps, no need for document-level middleware
