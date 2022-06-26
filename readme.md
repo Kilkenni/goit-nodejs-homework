@@ -21,6 +21,8 @@ Responds with corresponding errors if data provided for HTTP methods is flawed (
 
 Registers a new user. Reusing emails is not allowed. Subscription is optional, defaults to "starter"
 
+A new user begins with a email that is not verified. An email with verification token (link) is sent on the mailbox provided during registration.
+
 Requires JSON body:
 
     {
@@ -40,9 +42,41 @@ On **success** returns `201` + JSON:
 
 ---
 
+#### GET /verify/:verificationToken
+
+This endpoint verifies the email of a newly registered user. The link the user received can be used only once.
+
+On successful verification the user can log in and use the account.
+
+On **success** returns `200` + JSON:
+
+    {
+      message: "Verification successful",
+    }
+
+---
+
+#### POST /verify
+
+Re-sends the letter with verification token (used to confirm email address). Email should be present in the database (i.e. the user should have passed the registration).
+
+Requires JSON body:
+
+    {
+      email
+    }
+
+On **success** returns `200` + JSON:
+
+    {
+      message: "Verification email sent",
+    }
+
+---
+
 #### POST /login
 
-Logins a user, returning user info and an expirable JWT token.
+Logins a user, returning user info and an expirable JWT token. A user with non-verified email gets an error instead.
 
 Requires JSON body:
 
@@ -109,6 +143,34 @@ On **success** returns `200`+ JSON:
     {
       email
       subscription
+    }
+
+---
+
+#### PATCH /avatars
+
+A fresh user gets a randomly assigned Gravatar based on the email used during registration. This endpoint can be used to set a custom one.
+
+The file uploaded should satisfy the conditions:
+
+- JPG or PNG
+- max size of 1 Mb
+- preferably at least 250px (auto-scaled to this size on upload)
+
+Requires HTTP header:
+
+    Authorization: Bearer <valid JWT token>
+
+Requires JSON body (multipart/form-data):
+
+    {
+      avatar: JPG or PNG, max size of 1 Mb
+    }
+
+On **success** returns `200`+ JSON:
+
+    {
+      avatarURL
     }
 
 ---
