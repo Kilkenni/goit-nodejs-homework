@@ -15,7 +15,7 @@ const { validateToken } = require("../../validation/validateJsonWebToken")
 
 router.get('/', validateToken, async (req, res, next) => {
   try {
-    const contacts = await contactOps.listContacts(req.user.id);
+    const contacts = await contactOps.listContacts(req.user.id, req.query);
 
     res.status(200).json({
       code: 200,
