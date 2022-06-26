@@ -6,6 +6,7 @@ const multer = require("multer");
 const usersRouter = express.Router();
 
 const userOps = require('../../models/users');
+const userControllers = require("./controllers/users");
 const avatarOps = require("../../files/avatars.js");
 const { ServerError } = require("../../errors/ServerError.js");
 const { NotAuthorizedError } = require("../../errors/JwtError");
@@ -15,46 +16,15 @@ const {userValRegistration, userValLogin, userValSubscription } = require("../..
 const validateSchema = require("../../validation/validateSchema.js");
 const { validateToken } = require("../../validation/validateJsonWebToken");
 
-function filterUserEmailSub(userData) {
-  const { email, subscription } = userData;
-  return { email, subscription };
-}
+const filterUserEmailSub = require("./controllers/users/util");
 
 function getGravatar(email, size = "250", def = "retro") {
   return gravatar.url(email, { size, default: def}, true); //gets gravatar image URL or default pixel one generated from email hash if not found, force HTTPS
 }
 
-usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), async (req, res, next) => {
-  try {
-    const { email, password, subscription } = req.body;
-    const avatarURL = getGravatar(email);
-    const registeredUser = await userOps.registerUser(email, password, subscription , avatarURL);
+usersRouter.post('/signup', validateSchema(userValRegistration, ServerError), userControllers.signup);
 
-    res.status(201).json({
-      user: filterUserEmailSub(registeredUser),
-    })
-  }
-  catch (error) {
-    next(error);
-    return;
-  }
-});
-
-usersRouter.post("/login", validateSchema(userValLogin, ServerError), async (req, res, next) => {
-  try {
-    const { email, password} = req.body;
-    const loggedUser = await userOps.loginUser(email, password);
-
-    res.status(201).json({
-      token: loggedUser.token,
-      user: filterUserEmailSub(loggedUser),
-    })
-  }
-  catch (error) {
-    next(error);
-    return;
-  }
-});
+usersRouter.post("/login", validateSchema(userValLogin, ServerError), userControllers.login);
 
 usersRouter.get("/logout", validateToken, async (req, res, next) => {
   try {
