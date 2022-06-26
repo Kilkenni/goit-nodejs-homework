@@ -2,12 +2,15 @@ const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 
-const sendgridMail = require('@sendgrid/mail');
-sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
+// const sendgridMail = require('@sendgrid/mail');
+// sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const { User } = require("./userSchema.js");
 const { removeAvatar: removeOldAvatar} = require("../files/avatars");
 const { DatabaseError, DuplicateKeyError, LoginError, NotVerifiedUserError, VerifiedUserError } = require("../errors/DbError");
+const { ServerError } = require("../errors/ServerError");
+
+const emailOps = require("../services/email");
 
 async function hashPassword(plainTextPassword) {
   return await bcryptjs.hash(plainTextPassword, 11);
@@ -24,12 +27,17 @@ async function hashPassword(plainTextPassword) {
 
 async function registerUser(email, password, subscription = "starter", avatarURL) {
   try {
+    const verificationToken = uuidv4();
     const userWithId = await User.create({
       email,
       password: await hashPassword(password),
       subscription,
       avatarURL,
+      verificationToken,
+      verify: false, //not verified email by default
     });
+
+    await emailOps.sendVerificationEmail(email, verificationToken);
 
     return userWithId; //return new contact with id 
   }
@@ -46,6 +54,41 @@ async function registerUser(email, password, subscription = "starter", avatarURL
 }
 
 /**
+ * Resends email verification token to target email
+ * @param {!string} email - target email
+ * @returns 
+ */
+async function sendVerification(email) {
+  try {
+    
+    const nonverifiedUser = await User.findOne({ email: email }).select(["email", "verificationToken", "verify"]);
+    
+    if (!nonverifiedUser) {
+      return nonverifiedUser; //no user with this email
+    }
+    if (nonverifiedUser.verify === true) {
+      throw new VerifiedUserError(); //already verified
+    }
+    
+    const { verificationToken } = nonverifiedUser;
+
+    const sent = await emailOps.sendVerificationEmail(email, verificationToken);
+    if (sent) {
+      return nonverifiedUser;
+    }
+    else {
+      return false;
+    }
+  }
+  catch (error) {
+    if (error instanceof DatabaseError || error instanceof ServerError) {
+      throw error; //we know this error, throw it further
+    }
+    throw new DatabaseError();
+  }
+}
+
+/**
  * Marks user as "email verified". Finishes successfully only once for a single token
  * @param {!string} verificationToken
  */
@@ -57,42 +100,6 @@ async function verifyUserEmail(verificationToken) {
     }, { new: true });
 
     return verifiedUser;
-  }
-  catch (mongooseError) {
-    if (mongooseError instanceof DatabaseError) {
-      throw mongooseError; //we know this error, throw it further
-    }
-    throw new DatabaseError();
-  }
-}
-
-async function sendVerificationEmail(email, ignoreChecks = false) {
-  try {
-    const nonverifiedUser = await User.findOne({ email: email });
-    const verificationToken = nonverifiedUser.verificationToken; //uuidv4();
-    console.log(verificationToken)
-    
-    /*   
-    const msg = {
-      to: 'cgustu@gmail.com', // Change to your recipient
-      from: 'trinityblood@i.ua', // Change to your verified sender
-      subject: 'Sending with SendGrid is Fun',
-      text: 'and easy to do anywhere, even with Node.js',
-      html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-    }
-    sgMail
-      .send(msg)
-      .then(() => {
-        console.log('Email sent')
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-    */
-    
-    return false;
-    
-    //VerifiedUserError()
   }
   catch (mongooseError) {
     if (mongooseError instanceof DatabaseError) {
@@ -202,7 +209,7 @@ async function updateAvatar(id, avatarURL) {
 module.exports = {
   registerUser,
   verifyUserEmail,
-  sendVerificationEmail,
+  sendVerification,
   loginUser,
   logoutUser,
   getUserById,

@@ -59,7 +59,7 @@ usersRouter.post("/login", validateSchema(userValLogin, ServerError), async (req
 usersRouter.post("/verify", validateSchema(userValVerification), async (req, res, next) => {
   try {
     const { email } = req.body;
-    const foundUser = await userOps.sendVerificationEmail(email);
+    const foundUser = await userOps.sendVerification(email, true);
 
     if (!foundUser) {
       throw new NotFoundError(`No user with email=${email} found`, 404, "User not found");
