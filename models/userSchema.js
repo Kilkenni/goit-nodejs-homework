@@ -33,6 +33,14 @@ const userSchema = Schema({
     type: String,
     default: null,
   },
+  verify: { //bool - is email verified?
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    required: [true, 'Verify token is required'],
+  },
 }, { timestamps: true });
   
 //We hash password in the userOps, no need for document-level middleware
@@ -59,6 +67,10 @@ const userValLogin = Joi.object({
 });
 //we still check password here as a failproof to avoid overloading bcrypt with hashing big fake "passwords"
 
+const userValVerification = Joi.object({
+  email: Joi.string().email().required(),
+});
+
 const userValSubscription = Joi.object({
   subscription: Joi.string().valid("starter", "pro", "business").required(),
 });
@@ -75,4 +87,4 @@ const userValSchema = Joi.object({
 //by this schema, token should be an "array" of base64URL strings previously separated by "."
 //note the use of JoiJwt that coerces the token into this array
 
-module.exports = { User, userValRegistration, userValLogin, userValSubscription, userValSchema};
+module.exports = { User, userValRegistration, userValLogin, userValVerification, userValSubscription, userValSchema};

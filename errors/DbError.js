@@ -41,8 +41,32 @@ class LoginError extends DatabaseError {
   }
 }
 
+class NotVerifiedUserError extends DatabaseError {
+  constructor(details = `Unable to login, please verify your email first`, statusCode = 401, statusMessage = "Not authorized") {
+    super(details, statusCode, statusMessage);
+    this.details = [
+      {
+        message: details,
+      }
+    ];
+  }
+}
+
+class VerifiedUserError extends DatabaseError {
+  constructor(details = `Verification has already been passed`, statusCode = 400, statusMessage = "Bad request") {
+    super(details, statusCode, statusMessage);
+    this.details = [
+      {
+        message: details,
+      }
+    ];
+  }
+}
+
 module.exports = {
   DatabaseError,
   DuplicateKeyError,
   LoginError,
+  NotVerifiedUserError,
+  VerifiedUserError,
 };

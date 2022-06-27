@@ -20,7 +20,16 @@ class ServerError extends Error {
     this.message = statusMessage;
     //for Joi validation details and server logs
     if (details !== null) {
-      this.details = details;
+      if (typeof details === "string") {
+        this.details = [
+          {
+            message: details,
+          }
+        ];
+      }
+      else {
+        this.details = details;
+      }
     }
   }
 }

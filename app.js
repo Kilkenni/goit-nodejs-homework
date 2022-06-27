@@ -89,8 +89,11 @@ app.use((err, req, res, next) => {
     if (badReqMessage === '"favorite" is required') {
       badReqMessage = "missing field favorite";
     }
+    if (badReqMessage === '"email" is required') {
+      badReqMessage = "missing required field email";
+    }
     res.status(statusCode).json({
-      type: (details)? "Validation error" : "Bad request. Check request and body",
+      //type: (details)? "Validation error" : "Bad request. Check request and body",
       message: badReqMessage,
     });
     return;

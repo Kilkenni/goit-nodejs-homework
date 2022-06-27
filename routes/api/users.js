@@ -7,11 +7,11 @@ const usersRouter = express.Router();
 
 const userOps = require('../../models/users');
 const avatarOps = require("../../files/avatars.js");
-const { ServerError } = require("../../errors/ServerError.js");
+const { ServerError, NotFoundError } = require("../../errors/ServerError.js");
 const { NotAuthorizedError } = require("../../errors/JwtError");
 const { NoFileUploadedError, InvalidFileError } = require("../../errors/FileError.js");
 
-const {userValRegistration, userValLogin, userValSubscription } = require("../../models/userSchema.js");
+const {userValRegistration, userValVerification, userValLogin, userValSubscription } = require("../../models/userSchema.js");
 const validateSchema = require("../../validation/validateSchema.js");
 const { validateToken } = require("../../validation/validateJsonWebToken");
 
@@ -45,7 +45,7 @@ usersRouter.post("/login", validateSchema(userValLogin, ServerError), async (req
     const { email, password} = req.body;
     const loggedUser = await userOps.loginUser(email, password);
 
-    res.status(201).json({
+    res.status(200).json({
       token: loggedUser.token,
       user: filterUserEmailSub(loggedUser),
     })
@@ -54,6 +54,45 @@ usersRouter.post("/login", validateSchema(userValLogin, ServerError), async (req
     next(error);
     return;
   }
+});
+
+usersRouter.post("/verify", validateSchema(userValVerification), async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const foundUser = await userOps.sendVerification(email, true);
+
+    if (!foundUser) {
+      throw new NotFoundError(`No user with email=${email} found`, 404, "User not found");
+    }
+
+    res.status(200).json({
+      "message": "Verification email sent"
+    });
+  }
+  catch (error) {
+    next(error);
+    return;
+  }
+});
+
+usersRouter.get("/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+    console.log(verificationToken);
+    const verifiedUser = await userOps.verifyUserEmail(verificationToken);
+    if (!verifiedUser) {
+      throw new NotFoundError(`No user with verification token = ${verificationToken} found or email already verified`, 404, "User not found");
+    }
+    
+    res.status(200).json({
+      message: 'Verification successful',
+    });
+  }
+  catch (error) {
+    next(error);
+    return;
+  }
+
 });
 
 usersRouter.get("/logout", validateToken, async (req, res, next) => {
